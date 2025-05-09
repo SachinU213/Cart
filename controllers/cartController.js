@@ -3,7 +3,15 @@ const Cart = require('../models/Cart');
 // Create Cart
 exports.createCart = async (req, res) => {
   try {
-    const cart = new Cart(req.body);
+    const { userId, items } = req.body;
+
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ error: "'items' should be an array." });
+    }
+
+    const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    const cart = new Cart({ userId, items, totalPrice });
     await cart.save();
     res.status(201).json(cart);
   } catch (err) {
@@ -25,9 +33,17 @@ exports.getCart = async (req, res) => {
 // Update Cart
 exports.updateCart = async (req, res) => {
   try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ error: "'items' should be an array." });
+    }
+
+    const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
     const cart = await Cart.findOneAndUpdate(
       { userId: req.params.userId },
-      { ...req.body, updatedAt: Date.now() },
+      { items, totalPrice, updatedAt: Date.now() },
       { new: true, upsert: true }
     );
     res.json(cart);
